@@ -1,0 +1,17 @@
+apiVersion: V1
+kind: pod
+metadata:
+  name: nginx
+
+spec:
+  containers:
+    - image: nginx:nginx  # 一个坏了的镜像
+      name: nginx
+      livenessProbe:      # 一个http get 存活探针
+        httpGet:
+          path: /         # http的请求路径
+          port: 8000      # 探针连接的网络端口
+        initialDelaySeconds: 15  # kubernetes 会在第一次探测前等待15s
+
+# 这是一个判断应用存活的http探针
+# 如果5次请求返回值为500 kubernetes会认为探测失败并重启容器

@@ -1,0 +1,44 @@
+
+# 怎么拉取阿里云私人镜像
+
+## 首先把我们的镜像Push到阿里云私人镜像空间
+
+- [操作指南](https://cr.console.aliyun.com/repository/cn-beijing/test-clo/api/details)
+
+
+## 使用k8s拉取
+
+### 首先我们先创建登录凭证
+
+```json
+kubectl create secret docker-registry registry-secret
+--docker-server=registry.cn-beijing.aliyuncs.com
+--docker-username=whiteguigu
+--docker-password=zx2666612
+--docker-email=xx@xx.com
+-n default
+
+```
+
+- 随后我们在写yaml拉取镜像的时候添加`imagePullSecrets`认证凭证
+
+```yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+  labels:
+    name: api
+
+spec:
+  imagePullSecrets:
+    - name: registry-secret
+  containers:
+    - name: api
+      image: registry.cn-beijing.aliyuncs.com/test-clo/api:latest
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 8000
+
+```

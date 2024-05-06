@@ -1,0 +1,14 @@
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: api
+  namespace: armory
+spec:
+  rules:
+  - host: api.od.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: api
+          servicePort: 80

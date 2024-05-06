@@ -1,0 +1,39 @@
+kind: Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: ui
+  name: ui
+  namespace: armory
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 7
+  selector:
+    matchLabels:
+      name: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+        name: ui
+    spec:
+      containers:
+      - name: ui
+        image: harbor.od.com/public/ui:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/nginx/conf.d
+          name: config
+      imagePullSecrets:
+      - name: harbor
+      volumes:
+      - nfs:
+          server: hdss7-200.host.com
+          path: /data/nfs-volume/ui/conf.d
+        name: config
+

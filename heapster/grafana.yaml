@@ -1,0 +1,89 @@
+# k8s api 版本 目前基本是v1
+apiVersion: extensions/v1beta1
+# 指的是yaml文件定义的资源类型和角色比如pod
+kind: Deployment
+# 元数据对象，固定值写metadate
+metadata:
+  # 元数据对象的名字，我们自己编写比如pod的名字
+  name: monitoring-grafana
+  # 元数据对象的命名空间有我们自定义
+  namespace: kube-system
+# 详细定义对象，固定值spec
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        task: monitoring
+        k8s-app: grafana
+    spec:
+      # spec对象的容器列表定义，是个列表
+      containers:
+        # 定义容器的名字
+      - name: grafana
+        # 容器的镜像
+        image: registry.cn-hangzhou.aliyuncs.com/google_containers/heapster-grafana-amd64:v5.0.4
+        # 指定容器要用的端口列表
+        ports:
+          # 指定容器需要监听的端口号
+        - containerPort: 3000
+          # 指定端口协议，支持tcp和upd 默认值为tcp
+          protocol: TCP
+        # 指定容器内部的存储卷配置
+        volumeMounts:
+          # 指定可以被容器挂载的容器卷的路径
+        - mountPath: /etc/ssl/certs
+          # 指定可以被容器挂载的存储卷的名称
+          name: ca-certificates
+          # 设置存储卷的读写模式，默认为false
+          readOnly: true
+        - mountPath: /var
+          name: grafana-storage
+        env:
+        - name: INFLUXDB_HOST
+          value: monitoring-influxdb
+        - name: GF_SERVER_HTTP_PORT
+          value: "3000"
+          # The following env variables are required to make Grafana accessible via
+          # the kubernetes api-server proxy. On production clusters, we recommend
+          # removing these env variables, setup auth for grafana, and expose the grafana
+          # service using a LoadBalancer or a public IP.
+        - name: GF_AUTH_BASIC_ENABLED
+          value: "false"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: Admin
+        - name: GF_SERVER_ROOT_URL
+          # If you're only using the API Server proxy, set this value instead:
+          # value: /api/v1/namespaces/kube-system/services/monitoring-grafana/proxy
+          value: /
+      volumes:
+      - name: ca-certificates
+        hostPath:
+          path: /etc/ssl/certs
+      - name: grafana-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    # For use as a Cluster add-on (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons)
+    # If you are NOT using this as an addon, you should comment out this line.
+    kubernetes.io/cluster-service: 'true'
+    kubernetes.io/name: monitoring-grafana
+  name: monitoring-grafana
+  namespace: kube-system
+spec:
+  # In a production setup, we recommend accessing Grafana through an external Loadbalancer
+  # or through a public IP.
+  # type: LoadBalancer
+  # You could also use NodePort to expose the service at a randomly-generated port
+  type: NodePort
+  ports:
+  - port: 80
+    nodePort: 30001
+    targetPort: 3000
+  selector:
+    k8s-app: grafana
